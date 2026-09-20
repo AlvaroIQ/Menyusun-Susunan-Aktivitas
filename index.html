@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Menyusun Urutan Kegiatan Anak TK</title>
+    <!-- Memuat Library Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Comic Sans MS', 'Bubblegum Sans', cursive, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            background: white;
+            padding: 20px;
+            border-radius: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-width: 620px;
+            width: 100%;
+            text-align: center;
+            border: 5px solid #ff7675;
+            position: relative;
+        }
+
+        h1 {
+            color: #d63031;
+            font-size: 24px;
+            margin: 0 0 5px 0;
+            text-shadow: 2px 2px 0px #ffeaa7;
+        }
+
+        p.instruction {
+            color: #555;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+
+        /* Overlay Tombol Play Awal */
+        #start-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #start-overlay h2 {
+            color: #d63031;
+            font-size: 26px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 0px #ffeaa7;
+            padding: 0 15px;
+        }
+
+        #play-btn {
+            background-color: #00b894;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0, 184, 148, 0.4);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        #play-btn:hover {
+            background-color: #00cec9;
+            transform: scale(1.05);
+        }
+
+        /* Status & Skor Info */
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: bold;
+            color: #2d3436;
+            margin-bottom: 10px;
+            padding: 0 10px;
+        }
+
+        .category-title {
+            background: #ffeaa7;
+            color: #d35400;
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+        }
+
+        /* Area Kotak Target Urutan (1, 2, 3) di Atas */
+        .slots-area {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .drop-slot {
+            width: 175px;
+            height: 110px;
+            background: #f1f2f6;
+            border: 3px dashed #b2bec3;
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 5px;
+            transition: all 0.2s;
+        }
+
+        .drop-slot .slot-number {
+            position: absolute;
+            top: 4px;
+            left: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #636e72;
+        }
+
+        .drop-slot.filled {
+            border: 3px solid #00b894;
+            background: rgba(0, 184, 148, 0.1);
+        }
+
+        /* Kotak Pilihan Kartu Aktivitas di Bawah */
+        .toolbox-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2d3436;
+            margin-bottom: 6px;
+        }
+
+        .toolbox {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-height: 110px;
+            background: #dfe6e9;
+            padding: 12px;
+            border-radius: 18px;
+            align-items: center;
+        }
+
+        .activity-card {
+            width: 170px;
+            height: 90px;
+            background: white;
+            border: 3px solid #0984e3;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            padding: 5px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+            touch-action: none;
+            text-align: center;
+        }
+
+        .activity-card:active {
+            cursor: grabbing;
+        }
+
+        .activity-card .label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2d3436;
+            line-height: 1.2;
+        }
+
+        #feedback-text {
+            font-size: 17px;
+            font-weight: bold;
+            height: 25px;
+            margin-bottom: 5px;
+        }
+
+        #next-btn {
+            background-color: #e17055;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 10px rgba(225, 112, 85, 0.4);
+            display: none;
+        }
+
+        #next-btn:hover {
+            background-color: #fab1a0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Audio Efek & Musik -->
+    <audio id="bg-music" src="https://files.catbox.moe/a742my.mp3" preload="auto" loop></audio>
+    <audio id="win-music" src="https://files.catbox.moe/wsohm6.mp3" preload="auto"></audio>
+
+    <div class="game-container">
+        <!-- Overlay Tombol Play Awal -->
+        <div id="start-overlay">
+            <h2>🧩 Game Urutan Kegiatan Anak 🧩</h2>
+            <button id="play-btn" onclick="startGame()">Mulai Main 🚀</button>
+        </div>
+
+        <h1>⭐ Susun Urutan Kegiatan ⭐</h1>
+        <p class="instruction">Seret langkah kegiatan ke kotak nomor 1, 2, dan 3 sesuai urutan yang benar!</p>
+
+        <div class="game-info">
+            <div>Soal ke: <span id="current-level">1</span> / 3</div>
+            <div>Skor: <span id="score">0</span></div>
+        </div>
+
+        <div class="category-title" id="category-title">Aktivitas: Tidur</div>
+        <div id="feedback-text"></div>
+
+        <!-- Area Kotak Target Urutan (1, 2, 3) di Atas -->
+        <div class="slots-area">
+            <div class="drop-slot" data-order="1">
+                <span class="slot-number">Ke-1</span>
+            </div>
+            <div class="drop-slot" data-order="2">
+                <span class="slot-number">Ke-2</span>
+            </div>
+            <div class="drop-slot" data-order="3">
+                <span class="slot-number">Ke-3</span>
+            </div>
+        </div>
+
+        <div class="toolbox-title">Pilihan Langkah Kegiatan:</div>
+        <!-- Area Kartu Pilihan di Bawah -->
+        <div class="toolbox" id="toolbox">
+            <!-- Kartu dimuat via JavaScript -->
+        </div>
+
+        <button id="next-btn" onclick="nextLevel()">Lanjut Soal ➡️</button>
+    </div>
+
+    <script>
+        // Data 3 Aktivitas dengan masing-masing 3 langkah urutan
+        const levelsData = [
+            {
+                category: "Aktivitas : Tidur",
+                steps: [
+                    { id: 's1', text: 'Menggosok Gigi', order: 1 },
+                    { id: 's2', text: 'Membersihkan Tempat Tidur', order: 2 },
+                    { id: 's3', text: 'Membaca Doa', order: 3 }
+                ]
+            },
+            {
+                category: "Aktivitas : Makan",
+                steps: [
+                    { id: 'm1', text: 'Menyiapkan Piring', order: 1 },
+                    { id: 'm2', text: 'Mengambil Peralatan Makan', order: 2 },
+                    { id: 'm3', text: 'Mengambil Nasi dan Lauk', order: 3 }
+                ]
+            },
+            {
+                category: "Aktivitas : Belajar",
+                steps: [
+                    { id: 'b1', text: 'Menyiapkan Buku', order: 1 },
+                    { id: 'b2', text: 'Menyiapkan Alat Tulis', order: 2 },
+                    { id: 'b3', text: 'Membaca Doa', order: 3 }
+                ]
+            }
+        ];
+
+        let currentLevelIndex = 0;
+        let score = 0;
+        let placedCorrectlyCount = 0;
+
+        const startOverlay = document.getElementById('start-overlay');
+        const toolbox = document.getElementById('toolbox');
+        const slots = document.querySelectorAll('.drop-slot');
+        const scoreDisplay = document.getElementById('score');
+        const levelDisplay = document.getElementById('current-level');
+        const categoryTitle = document.getElementById('category-title');
+        const feedbackText = document.getElementById('feedback-text');
+        const nextBtn = document.getElementById('next-btn');
+        const bgMusic = document.getElementById('bg-music');
+        const winMusic = document.getElementById('win-music');
+
+        bgMusic.volume = 0.2;
+        winMusic.volume = 0.6;
+
+        function startGame() {
+            startOverlay.style.display = 'none';
+            bgMusic.currentTime = 0;
+            bgMusic.play().catch(() => {});
+            
+            currentLevelIndex = 0;
+            score = 0;
+            scoreDisplay.textContent = score;
+            loadLevel();
+        }
+
+        function loadLevel() {
+            toolbox.innerHTML = '';
+            feedbackText.textContent = '';
+            nextBtn.style.display = 'none';
+            placedCorrectlyCount = 0;
+
+            levelDisplay.textContent = currentLevelIndex + 1;
+            const currentObj = levelsData[currentLevelIndex];
+            categoryTitle.textContent = currentObj.category;
+
+            // Reset slot kosong
+            slots.forEach(slot => {
+                slot.innerHTML = `<span class="slot-number">Ke-${slot.dataset.order}</span>`;
+                slot.classList.remove('filled');
+            });
+
+            // Acak kartu langkah kegiatan di toolbox bawah
+            let shuffledSteps = [...currentObj.steps].sort(() => Math.random() - 0.5);
+
+            shuffledSteps.forEach(step => {
+                const card = document.createElement('div');
+                card.classList.add('activity-card');
+                card.dataset.id = step.id;
+                card.dataset.order = step.order;
+                card.innerHTML = `<div class="label">${step.text}</div>`;
+
+                initDragAndDrop(card, step.order);
+                toolbox.appendChild(card);
+            });
+        }
+
+        // Fitur Drag and Drop presisi (Mendukung Mouse & Touch HP)
+        function initDragAndDrop(item, correctOrder) {
+            let isDragging = false;
+            let shiftX = 0, shiftY = 0;
+
+            function dragStart(e) {
+                if (item.classList.contains('placed')) return;
+                isDragging = true;
+
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                const rect = item.getBoundingClientRect();
+                shiftX = clientX - rect.left;
+                shiftY = clientY - rect.top;
+
+                item.style.position = 'fixed';
+                item.style.left = (clientX - shiftX) + 'px';
+                item.style.top = (clientY - shiftY) + 'px';
+                item.style.zIndex = '1000';
+
+                if (e.type === 'touchstart') {
+                    document.addEventListener('touchmove', dragMove, { passive: false });
+                    document.addEventListener('touchend', dragEnd);
+                } else {
+                    document.addEventListener('mousemove', dragMove);
+                    document.addEventListener('mouseup', dragEnd);
+                }
+                if(e.cancelable) e.preventDefault();
+            }
+
+            function dragMove(e) {
+                if (!isDragging) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                item.style.left = (clientX - shiftX) + 'px';
+                item.style.top = (clientY - shiftY) + 'px';
+
+                if(e.cancelable) e.preventDefault();
+            }
+
+            function dragEnd(e) {
+                if (!isDragging) return;
+                isDragging = false;
+
+                if (e.type === 'touchend') {
+                    document.removeEventListener('touchmove', dragMove);
+                    document.removeEventListener('touchend', dragEnd);
+                } else {
+                    document.removeEventListener('mousemove', dragMove);
+                    document.removeEventListener('mouseup', dragEnd);
+                }
+
+                // Cari slot mana yang didekati
+                let droppedOnSlot = null;
+                slots.forEach(slot => {
+                    const slotRect = slot.getBoundingClientRect();
+                    const itemRect = item.getBoundingClientRect();
+                    const itemCenterX = itemRect.left + itemRect.width / 2;
+                    const itemCenterY = itemRect.top + itemRect.height / 2;
+
+                    if (
+                        itemCenterX >= slotRect.left &&
+                        itemCenterX <= slotRect.right &&
+                        itemCenterY >= slotRect.top &&
+                        itemCenterY <= slotRect.bottom
+                    ) {
+                        droppedOnSlot = slot;
+                    }
+                });
+
+                // Cek apakah slot tersebut benar sesuai urutan angka
+                if (droppedOnSlot && parseInt(droppedOnSlot.dataset.order) === correctOrder && !droppedOnSlot.classList.contains('filled')) {
+                    // Masukkan kartu ke dalam slot
+                    droppedOnSlot.innerHTML = `<span class="slot-number">Ke-${droppedOnSlot.dataset.order}</span>`;
+                    droppedOnSlot.appendChild(item);
+                    
+                    item.style.position = 'static';
+                    item.style.zIndex = '1';
+                    item.style.cursor = 'default';
+                    item.classList.add('placed');
+                    droppedOnSlot.classList.add('filled');
+
+                    item.onmousedown = null;
+                    item.ontouchstart = null;
+
+                    placedCorrectlyCount++;
+                    score += 10;
+                    scoreDisplay.textContent = score;
+
+                    feedbackText.textContent = '👍 Benar sekali!';
+                    feedbackText.style.color = '#00b894';
+
+                    checkLevelCompletion();
+                } else {
+                    feedbackText.textContent = '❌ Ups, urutannya kurang tepat!';
+                    feedbackText.style.color = '#d63031';
+                    
+                    item.style.position = 'static';
+                    item.style.zIndex = '1';
+                    toolbox.appendChild(item);
+                }
+            }
+
+            item.addEventListener('mousedown', dragStart);
+            item.addEventListener('touchstart', dragStart, { passive: false });
+        }
+
+        function checkLevelCompletion() {
+            if (placedCorrectlyCount === 3) {
+                feedbackText.textContent = '🎉 Hore! Aktivitas Ini Selesai Disusun! 🌟';
+                feedbackText.style.color = '#00b894';
+
+                winMusic.currentTime = 0;
+                winMusic.play().catch(() => {});
+
+                confetti({
+                    particleCount: 120,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+
+                if (currentLevelIndex < levelsData.length - 1) {
+                    nextBtn.textContent = 'Lanjut Soal ➡️';
+                    nextBtn.style.display = 'inline-block';
+                } else {
+                    feedbackText.textContent = '🌟 Luar Biasa! Semua Aktivitas Selesai! 🏆';
+                    nextBtn.textContent = 'Main Lagi 🔄';
+                    nextBtn.onclick = startGame;
+                    nextBtn.style.display = 'inline-block';
+                }
+            }
+        }
+
+        function nextLevel() {
+            currentLevelIndex++;
+            nextBtn.onclick = nextLevel;
+            loadLevel();
+        }
+    </script>
+</body>
+</html>
